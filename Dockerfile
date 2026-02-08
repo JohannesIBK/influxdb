@@ -5,6 +5,8 @@ FROM rust:${RUST_VERSION}-slim-bookworm as build
 # cache mounts below may already exist and owned by root
 USER root
 
+RUN echo "deb http://mirrors.aliyun.com/debian bookworm main contrib non-free" > /etc/apt/sources.list
+
 RUN apt update \
     && apt install --yes binutils build-essential curl pkg-config libssl-dev clang lld git patchelf protobuf-compiler zstd libz-dev \
     && rm -rf /var/lib/{apt,dpkg,cache,log}
@@ -17,9 +19,9 @@ ARG CARGO_NET_GIT_FETCH_WITH_CLI=false
 ARG PROFILE=release
 ARG FEATURES=aws,gcp,azure,jemalloc_replacing_malloc
 ARG PACKAGE=influxdb3
-ARG PBS_DATE=unset
-ARG PBS_VERSION=unset
-ARG PBS_TARGET=unset
+ARG PBS_DATE=20260203
+ARG PBS_VERSION=3.14.3
+ARG PBS_TARGET=aarch64-unknown-linux-gnu
 ENV CARGO_INCREMENTAL=$CARGO_INCREMENTAL \
     CARGO_NET_GIT_FETCH_WITH_CLI=$CARGO_NET_GIT_FETCH_WITH_CLI \
     PROFILE=$PROFILE \
@@ -27,11 +29,13 @@ ENV CARGO_INCREMENTAL=$CARGO_INCREMENTAL \
     PACKAGE=$PACKAGE \
     PBS_TARGET=$PBS_TARGET \
     PBS_DATE=$PBS_DATE \
-    PBS_VERSION=$PBS_VERSION
+    PBS_VERSION=$PBS_VERSION \
+    JEMALLOC_SYS_WITH_LG_PAGE=16
 
 # obtain python-build-standalone and configure PYO3_CONFIG_FILE
 COPY .circleci /influxdb3/.circleci
 RUN \
+  chmod +x ./.circleci/scripts/fetch-python-standalone.bash && \
   sed -i "s/^readonly TARGETS=.*/readonly TARGETS=${PBS_TARGET}/" ./.circleci/scripts/fetch-python-standalone.bash && \
   ./.circleci/scripts/fetch-python-standalone.bash /influxdb3/python-artifacts "${PBS_DATE}" "${PBS_VERSION}" && \
   tar -C /influxdb3/python-artifacts -zxf /influxdb3/python-artifacts/all.tar.gz "./${PBS_TARGET}" && \
@@ -40,19 +44,9 @@ RUN \
 
 COPY . /influxdb3
 
-RUN \
-  --mount=type=cache,id=influxdb3_rustup,sharing=locked,target=/usr/local/rustup \
-  --mount=type=cache,id=influxdb3_registry,sharing=locked,target=/usr/local/cargo/registry \
-  --mount=type=cache,id=influxdb3_git,sharing=locked,target=/usr/local/cargo/git \
-    du -cshx /usr/local/rustup /usr/local/cargo/registry /usr/local/cargo/git && \
-    rustup toolchain install
+RUN rustup toolchain install
 
 RUN \
-  --mount=type=cache,id=influxdb3_rustup,sharing=locked,target=/usr/local/rustup \
-  --mount=type=cache,id=influxdb3_registry,sharing=locked,target=/usr/local/cargo/registry \
-  --mount=type=cache,id=influxdb3_git,sharing=locked,target=/usr/local/cargo/git \
-  --mount=type=cache,id=influxdb3_target,sharing=locked,target=/influxdb3/target \
-    du -cshx /usr/local/rustup /usr/local/cargo/registry /usr/local/cargo/git /influxdb3/target && \
     PYO3_CONFIG_FILE="/influxdb3/python-artifacts/$PBS_TARGET/pyo3_config_file.txt" cargo build --target-dir /influxdb3/target --package="$PACKAGE" --profile="$PROFILE" --no-default-features --features="$FEATURES" && \
     objcopy --compress-debug-sections "target/$PROFILE/$PACKAGE" && \
     cp "/influxdb3/target/$PROFILE/$PACKAGE" "/root/$PACKAGE" && \

@@ -7,14 +7,14 @@ readonly FEATURES="$2"
 readonly TAG="$3"
 readonly PBS_DATE="$4"
 readonly PBS_VERSION="$5"
-readonly ARCH="${6:-amd64}"  # Default to amd64 if not specified
+readonly ARCH="${6:-arm64}"  # Default to amd64 if not specified
 readonly PROFILE="${7:-release}"       # Default to release if not specified
 
 RUST_VERSION="$(sed -E -ne 's/channel = "(.*)"/\1/p' rust-toolchain.toml)"
 COMMIT_SHA="$(git rev-parse HEAD)"
 COMMIT_TS="$(env TZ=UTC0 git show --quiet --date='format-local:%Y-%m-%dT%H:%M:%SZ' --format="%cd" HEAD)"
 NOW="$(date --utc --iso-8601=seconds)"
-REPO_URL="https://github.com/influxdata/influxdb"
+REPO_URL="https://github.com/johannesibk/influxdb"
 
 # Convert arch to platform
 PLATFORM="linux/${ARCH}"
