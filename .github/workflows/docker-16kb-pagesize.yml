@@ -58,7 +58,8 @@ jobs:
         run: |
           PBS_DATE=$(grep -E "^readonly PBS_DATE=" .circleci/scripts/fetch-python-standalone.bash | sed -E 's/readonly PBS_DATE="(.*)"/\1/')
           PBS_VERSION=$(grep -E "^readonly PBS_VERSION=" .circleci/scripts/fetch-python-standalone.bash | sed -E 's/readonly PBS_VERSION="(.*)"/\1/')
-          PBS_TARGET=$(grep -E "^readonly TARGETS=" .circleci/scripts/fetch-python-standalone.bash | sed -E 's/readonly TARGETS="(.*)"/\1/')
+          # Use aarch64-unknown-linux-gnu for ARM64/Raspberry Pi 5
+          PBS_TARGET="aarch64-unknown-linux-gnu"
           echo "date=$PBS_DATE" >> $GITHUB_OUTPUT
           echo "version=$PBS_VERSION" >> $GITHUB_OUTPUT
           echo "target=$PBS_TARGET" >> $GITHUB_OUTPUT
