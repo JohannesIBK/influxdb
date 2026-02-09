@@ -14,7 +14,7 @@ RUN apt update \
 RUN mkdir /influxdb3
 WORKDIR /influxdb3
 
-ARG CARGO_INCREMENTAL=yes
+ARG CARGO_INCREMENTAL=no
 ARG CARGO_NET_GIT_FETCH_WITH_CLI=false
 ARG PROFILE=release
 ARG FEATURES=aws,gcp,azure,jemalloc_replacing_malloc
@@ -30,7 +30,8 @@ ENV CARGO_INCREMENTAL=$CARGO_INCREMENTAL \
     PBS_TARGET=$PBS_TARGET \
     PBS_DATE=$PBS_DATE \
     PBS_VERSION=$PBS_VERSION \
-    JEMALLOC_SYS_WITH_LG_PAGE=16
+    JEMALLOC_SYS_WITH_LG_PAGE=16 \
+    CARGO_BUILD_JOBS=2
 
 # obtain python-build-standalone and configure PYO3_CONFIG_FILE
 COPY .circleci /influxdb3/.circleci
